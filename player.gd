@@ -10,5 +10,6 @@ func _get_input() -> void:
 	velocity = input_dir * speed
 
 func _physics_process(delta):
-	_get_input()
-	move_and_slide()
+	if is_multiplayer_authority():
+		_get_input()
+		move_and_slide()

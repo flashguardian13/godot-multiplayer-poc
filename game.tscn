@@ -5,8 +5,9 @@
 
 [node name="Game" type="Node2D"]
 script = ExtResource("1_0d6ki")
+player_scene = ExtResource("1_lk51x")
 
-[node name="Player" parent="." instance=ExtResource("1_lk51x")]
+[node name="World" type="Node2D" parent="."]
 
 [node name="HostButton" type="Button" parent="."]
 offset_left = 1053.0
@@ -29,6 +30,9 @@ offset_top = 46.0
 offset_right = 1143.0
 offset_bottom = 77.0
 text = "Leave"
+
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
+spawn_path = NodePath("../World")
 
 [connection signal="pressed" from="HostButton" to="." method="_on_host_button_pressed"]
 [connection signal="pressed" from="JoinButton" to="." method="_on_join_button_pressed"]

@@ -1,4 +1,4 @@
-extends Node2D
+extends MarginContainer
 
 @export
 var player_scene:PackedScene
@@ -114,3 +114,7 @@ func despawn_player(id:int) -> void:
 	player_sprites.erase(id)
 	$World.remove_child(player_sprite)
 	player_sprite.queue_free()
+
+func _on_chat_toggle_button_pressed():
+	get_tree().paused = true
+	$ChatVBoxContainer.popup_centered()

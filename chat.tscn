@@ -1,0 +1,58 @@
+[gd_scene load_steps=2 format=3 uid="uid://dell36tdrrbcg"]
+
+[ext_resource type="Script" path="res://chat.gd" id="1_qbwh1"]
+
+[node name="Window" type="Window"]
+title = "Chat"
+initial_position = 2
+size = Vector2i(600, 400)
+transient = true
+exclusive = true
+transparent = true
+popup_window = true
+extend_to_title = true
+min_size = Vector2i(600, 400)
+script = ExtResource("1_qbwh1")
+
+[node name="ChatVBoxContainer" type="VBoxContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="UpperHBoxContainer" type="HBoxContainer" parent="ChatVBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MessageScrollContainer" type="ScrollContainer" parent="ChatVBoxContainer/UpperHBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_scroll_mode = 0
+
+[node name="MessageVBoxContainer" type="VBoxContainer" parent="ChatVBoxContainer/UpperHBoxContainer/MessageScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ParticipantsScrollContainer2" type="ScrollContainer" parent="ChatVBoxContainer/UpperHBoxContainer"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="ParticipantsVBoxContainer" type="VBoxContainer" parent="ChatVBoxContainer/UpperHBoxContainer/ParticipantsScrollContainer2"]
+layout_mode = 2
+
+[node name="LowerHBoxContainer" type="HBoxContainer" parent="ChatVBoxContainer"]
+layout_mode = 2
+
+[node name="LineEdit" type="LineEdit" parent="ChatVBoxContainer/LowerHBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SendButton" type="Button" parent="ChatVBoxContainer/LowerHBoxContainer"]
+layout_mode = 2
+text = "Send"
+
+[connection signal="close_requested" from="." to="." method="_on_close_requested"]
+[connection signal="go_back_requested" from="." to="." method="_on_go_back_requested"]

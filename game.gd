@@ -8,12 +8,7 @@ const IP_ADDRESS:String = "127.0.0.1"
 const PORT:int = 45367
 const MAX_CLIENTS:int = 8
 
-# Per-peer information
-var player_details:Dictionary = {}
 var player_sprites:Dictionary = {}
-
-# Local Player information
-var my_info:Dictionary = { "name": "Player %s" % randi() }
 
 func _ready():
 	multiplayer.peer_connected.connect(_on_peer_connected)
@@ -37,7 +32,7 @@ func _on_host_button_pressed():
 		return error
 	multiplayer.multiplayer_peer = peer
 	print("[%s] peer is now %s" % [my_peer_id(), multiplayer.multiplayer_peer])
-	setup_player(multiplayer.get_unique_id(), my_info)
+	setup_player(multiplayer.get_unique_id(), $ChatVBoxContainer.chat_nickname)
 
 func _on_join_button_pressed():
 	print("[%s] (Click) Join" % my_peer_id())
@@ -68,7 +63,8 @@ func _on_chat_toggle_button_pressed():
 
 func _on_peer_connected(id:int):
 	print("[%s] (Event) Peer %s has connected." % [my_peer_id(), id])
-	_register_player.rpc_id(id, my_info) # Hello, [id], here is my player info.
+	# Hello, [id], here is my player info.
+	_register_player.rpc_id(id, { "chat_nickname": $ChatVBoxContainer.chat_nickname })
 
 func _on_peer_disconnected(id:int):
 	print("[%s] (Event) Peer %s disconnected." % [my_peer_id(), id])
@@ -76,7 +72,6 @@ func _on_peer_disconnected(id:int):
 
 func _on_connected_to_server():
 	print("[%s] (Event) Connection to server succeeded." % my_peer_id())
-	player_details[my_peer_id()] = my_info
 
 func _on_connection_failed():
 	print("[%s] (Event) Connection to server failed!" % my_peer_id())
@@ -89,7 +84,7 @@ func _on_server_disconnected():
 # Multiplayer functions
 
 func is_multiplayer() -> bool:
-	return player_details.size() > 0
+	return multiplayer.multiplayer_peer is ENetMultiplayerPeer
 
 func my_peer_id() -> int:
 	if multiplayer && multiplayer.has_multiplayer_peer():
@@ -100,19 +95,13 @@ func my_peer_id() -> int:
 func _register_player(player_info:Dictionary):
 	var sender_id:int = multiplayer.get_remote_sender_id()
 	print("[%s] (RPC) Received information for player %s." % [my_peer_id(), sender_id])
-	setup_player(sender_id, player_info)
+	setup_player(sender_id, player_info["chat_nickname"])
 
-func setup_player(peer_id:int, peer_info:Dictionary):
+func setup_player(peer_id:int, chat_nickname:String):
 	print("[%s] setup_player() called for peer %s." % [my_peer_id(), peer_id])
-	player_details[peer_id] = peer_info
 	if multiplayer.is_server():
 		$MultiplayerSpawner.spawn({ "auth_id": peer_id })
-		$ChatVBoxContainer.participant_spawner().spawn(
-			{
-				"name": peer_info["name"],
-				"peer_id": peer_id
-			}
-		)
+	$ChatVBoxContainer.register_participant(peer_id, chat_nickname)
 
 func spawn_player(data:Dictionary) -> Node2D:
 	var auth_id:int = data.get("auth_id")
@@ -136,15 +125,14 @@ func disconnect_from_server() -> void:
 	print("[%s] peer is now %s" % [my_peer_id(), multiplayer.multiplayer_peer])
 	old_peer.close()
 	print("[%s] Multiplayer peer closed." % my_peer_id())
-	for player_id in player_details.keys():
+	for player_id in player_sprites.keys():
 		teardown_player(player_id)
 
 func teardown_player(peer_id:int):
 	print("[%s] teardown_player() called for peer %s." % [my_peer_id(), peer_id])
-	player_details.erase(peer_id)
 	if multiplayer.is_server():
 		despawn_player(peer_id)
-		$ChatVBoxContainer._delete_participant(peer_id)
+	$ChatVBoxContainer.deregister_participant(peer_id)
 
 func despawn_player(id:int) -> void:
 	print("[%s] despawn_player() called for peer %s." % [my_peer_id(), id])

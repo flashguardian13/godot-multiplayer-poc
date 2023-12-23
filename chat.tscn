@@ -8,7 +8,6 @@ initial_position = 2
 size = Vector2i(600, 400)
 transient = true
 exclusive = true
-transparent = true
 popup_window = true
 extend_to_title = true
 min_size = Vector2i(600, 400)
@@ -42,6 +41,9 @@ horizontal_scroll_mode = 0
 
 [node name="ParticipantsVBoxContainer" type="VBoxContainer" parent="ChatVBoxContainer/UpperHBoxContainer/ParticipantsScrollContainer2"]
 layout_mode = 2
+
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="ChatVBoxContainer/UpperHBoxContainer/ParticipantsScrollContainer2"]
+spawn_path = NodePath("../ParticipantsVBoxContainer")
 
 [node name="LowerHBoxContainer" type="HBoxContainer" parent="ChatVBoxContainer"]
 layout_mode = 2

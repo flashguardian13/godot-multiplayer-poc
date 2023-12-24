@@ -2,9 +2,6 @@ extends CharacterBody2D
 
 @export var speed = 400
 
-func _ready():
-	pass # Replace with function body.
-
 func _get_input() -> void:
 	var input_dir:Vector2 = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	velocity = input_dir * speed

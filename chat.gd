@@ -4,26 +4,33 @@ const NAME_ADJECTIVES:Array = ["Red", "Orange", "Yellow", "Green", "Blue", "Indi
 const NAME_NOUNS:Array = ["Dog", "Cat", "Mouse", "Bird", "Pig", "Fish", "Bear", "Fox", "Bunny"]
 # TODO: Let the player choose their name
 # TODO: Let the player choose a color
-var chat_nickname:String = "%s %s" % [NAME_ADJECTIVES.pick_random(), NAME_NOUNS.pick_random()]
+var _chat_nickname:String = "%s %s" % [NAME_ADJECTIVES.pick_random(), NAME_NOUNS.pick_random()]
+var _chat_color:Color = Color.from_hsv(randf(), randf() * 0.5 + 0.5, randf() * 0.5 + 0.5)
 
 var participants:Dictionary = {}
 var participant_labels:Dictionary = {}
 
 func participant_spawner() -> MultiplayerSpawner:
-	return $ChatVBoxContainer/UpperHBoxContainer/ParticipantsScrollContainer2/MultiplayerSpawner
+	return $ChatVBox/UpperHBox/InfoVBox/ParticipantsScroll/ParticipantSpawner
 
 func message_spawner() -> MultiplayerSpawner:
-	return $ChatVBoxContainer/UpperHBoxContainer/MessageScrollContainer/MultiplayerSpawner
+	return $ChatVBox/UpperHBox/MessageScroll/MessageSpawner
 
 func _ready():
 	participant_spawner().spawn_function = _spawn_partipant_label
 	message_spawner().spawn_function = _spawn_message
 
-func register_participant(peer_id:int, peer_name:String) -> void:
-	print("[%s] register_participant called with %s, %s" % [multiplayer.get_unique_id(), peer_id, peer_name])
-	participants[peer_id] = { "name": peer_name, "peer_id": peer_id }
+func get_chat_config() -> Dictionary:
+	return {
+		"name": _chat_nickname,
+		"color": _chat_color
+	}
+
+func register_participant(player_info:Dictionary) -> void:
+	print("[%s] register_participant called with %s" % [multiplayer.get_unique_id(), player_info])
+	participants[player_info["peer_id"]] = player_info
 	if multiplayer.is_server():
-		participant_spawner().spawn({ "name": peer_name, "peer_id": peer_id })
+		participant_spawner().spawn(player_info)
 
 func _spawn_partipant_label(data:Dictionary) -> Label:
 	print("[%s] _spawn_partipant_label called with %s" % [multiplayer.get_unique_id(), data])
@@ -48,11 +55,13 @@ func _on_line_edit_text_submitted(_new_text):
 	
 func _on_send_button_pressed():
 	_send_message()
-	$ChatVBoxContainer/LowerHBoxContainer/LineEdit.grab_focus()
+	$ChatVBox/LowerHBox/MessageLineEdit.grab_focus()
 
 func _send_message() -> void:
 	print("[%s] _send_message called" % multiplayer.get_unique_id())
-	var le:LineEdit = $ChatVBoxContainer/LowerHBoxContainer/LineEdit
+	if !(multiplayer.multiplayer_peer is ENetMultiplayerPeer):
+		return
+	var le:LineEdit = $ChatVBox/LowerHBox/MessageLineEdit
 	if le.text.strip_edges() == "":
 		return
 	if multiplayer.is_server():
@@ -68,23 +77,27 @@ func _rpc_create_message(message:String) -> void:
 
 func create_message(message:String) -> void:
 	print("[%s] create_message called with %s" % [multiplayer.get_unique_id(), message])
+	if !multiplayer.is_server():
+		return
 	var sender_id:int = multiplayer.get_remote_sender_id()
 	if sender_id == 0:
 		sender_id = 1
 	var info:Dictionary = participants[sender_id]
-	if multiplayer.is_server():
-		message_spawner().spawn({
-			"name": info["name"],
-			"id": info["peer_id"] % 10000,
-			"message": message
-		})
-	print("[%s] message child count: %s" % [multiplayer.get_unique_id(), $ChatVBoxContainer/UpperHBoxContainer/MessageScrollContainer/MessageVBoxContainer.get_child_count()])
+	message_spawner().spawn({
+		"name":    info["name"],
+		"color":   info["color"],
+		"id":      info["peer_id"] % 10000,
+		"message": message
+	})
 
 func _spawn_message(data:Dictionary) -> RichTextLabel:
 	print("[%s] _spawn_message called with %s" % [multiplayer.get_unique_id(), data])
 	var p:RichTextLabel = RichTextLabel.new()
 	p.fit_content = true
-	p.text = "[%s#%s]: %s" % [data["name"], data["id"], data["message"]]
+	p.push_color(data["color"])
+	p.add_text("[%s#%s]: " % [data["name"], data["id"]])
+	p.append_text(data["message"])
+	p.pop_all()
 	return p
 
 func _on_close_requested():

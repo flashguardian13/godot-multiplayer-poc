@@ -32,7 +32,9 @@ func _on_host_button_pressed():
 		return error
 	multiplayer.multiplayer_peer = peer
 	print("[%s] peer is now %s" % [my_peer_id(), multiplayer.multiplayer_peer])
-	setup_player(multiplayer.get_unique_id(), $ChatVBoxContainer.chat_nickname)
+	var data:Dictionary = { "peer_id": multiplayer.get_unique_id() }
+	data.merge($ChatVBoxContainer.get_chat_config(), true)
+	setup_player(data)
 
 func _on_join_button_pressed():
 	print("[%s] (Click) Join" % my_peer_id())
@@ -61,10 +63,12 @@ func _on_chat_toggle_button_pressed():
 
 # Local multiplayer event listeners.
 
+# TODO: these should generate chat messages
+
 func _on_peer_connected(id:int):
 	print("[%s] (Event) Peer %s has connected." % [my_peer_id(), id])
 	# Hello, [id], here is my player info.
-	_register_player.rpc_id(id, { "chat_nickname": $ChatVBoxContainer.chat_nickname })
+	_register_player.rpc_id(id, $ChatVBoxContainer.get_chat_config())
 
 func _on_peer_disconnected(id:int):
 	print("[%s] (Event) Peer %s disconnected." % [my_peer_id(), id])
@@ -95,21 +99,23 @@ func my_peer_id() -> int:
 func _register_player(player_info:Dictionary):
 	var sender_id:int = multiplayer.get_remote_sender_id()
 	print("[%s] (RPC) Received information for player %s." % [my_peer_id(), sender_id])
-	setup_player(sender_id, player_info["chat_nickname"])
+	var data:Dictionary = { "peer_id": sender_id }
+	data.merge(player_info)
+	setup_player(data)
 
-func setup_player(peer_id:int, chat_nickname:String):
-	print("[%s] setup_player() called for peer %s." % [my_peer_id(), peer_id])
+func setup_player(player_info:Dictionary):
+	print("[%s] setup_player() called for peer %s." % [my_peer_id(), player_info["peer_id"]])
 	if multiplayer.is_server():
-		$MultiplayerSpawner.spawn({ "auth_id": peer_id })
-	$ChatVBoxContainer.register_participant(peer_id, chat_nickname)
+		$MultiplayerSpawner.spawn(player_info)
+	$ChatVBoxContainer.register_participant(player_info)
 
 func spawn_player(data:Dictionary) -> Node2D:
-	var auth_id:int = data.get("auth_id")
-	print("[%s] spawn_player() called for peer %s." % [my_peer_id(), auth_id])
+	var peer_id:int = data.get("peer_id")
+	print("[%s] spawn_player() called for peer %s." % [my_peer_id(), peer_id])
 	var player_sprite:Node2D = player_scene.instantiate()
-	player_sprites[auth_id] = player_sprite
-	player_sprite.name = "Player%s" % auth_id
-	player_sprite.call_deferred("set_multiplayer_authority", auth_id)
+	player_sprites[peer_id] = player_sprite
+	player_sprite.name = "Player%s" % peer_id
+	player_sprite.call_deferred("set_multiplayer_authority", peer_id)
 	player_sprite.position = Vector2(
 		randi() % DisplayServer.window_get_size().x,
 		randi() % DisplayServer.window_get_size().y

@@ -13,55 +13,75 @@ extend_to_title = true
 min_size = Vector2i(600, 400)
 script = ExtResource("1_qbwh1")
 
-[node name="ChatVBoxContainer" type="VBoxContainer" parent="."]
+[node name="ChatVBox" type="VBoxContainer" parent="."]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="UpperHBoxContainer" type="HBoxContainer" parent="ChatVBoxContainer"]
+[node name="UpperHBox" type="HBoxContainer" parent="ChatVBox"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="MessageScrollContainer" type="ScrollContainer" parent="ChatVBoxContainer/UpperHBoxContainer"]
+[node name="MessageScroll" type="ScrollContainer" parent="ChatVBox/UpperHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 horizontal_scroll_mode = 0
 
-[node name="MessageVBoxContainer" type="VBoxContainer" parent="ChatVBoxContainer/UpperHBoxContainer/MessageScrollContainer"]
+[node name="MessageVBox" type="VBoxContainer" parent="ChatVBox/UpperHBox/MessageScroll"]
 custom_minimum_size = Vector2(100, 100)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="ChatVBoxContainer/UpperHBoxContainer/MessageScrollContainer"]
-spawn_path = NodePath("../MessageVBoxContainer")
+[node name="MessageSpawner" type="MultiplayerSpawner" parent="ChatVBox/UpperHBox/MessageScroll"]
+spawn_path = NodePath("../MessageVBox")
 
-[node name="ParticipantsScrollContainer2" type="ScrollContainer" parent="ChatVBoxContainer/UpperHBoxContainer"]
+[node name="InfoVBox" type="VBoxContainer" parent="ChatVBox/UpperHBox"]
+layout_mode = 2
+
+[node name="PlayerHBox" type="HBoxContainer" parent="ChatVBox/UpperHBox/InfoVBox"]
+layout_mode = 2
+
+[node name="NameLineEdit" type="LineEdit" parent="ChatVBox/UpperHBox/InfoVBox/PlayerHBox"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PlayerColorPicker" type="ColorPickerButton" parent="ChatVBox/UpperHBox/InfoVBox/PlayerHBox"]
+layout_mode = 2
+text = "clr"
+color = Color(0.52549, 0, 0, 1)
+edit_alpha = false
+
+[node name="ParticipantsScroll" type="ScrollContainer" parent="ChatVBox/UpperHBox/InfoVBox"]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 horizontal_scroll_mode = 0
 
-[node name="ParticipantsVBoxContainer" type="VBoxContainer" parent="ChatVBoxContainer/UpperHBoxContainer/ParticipantsScrollContainer2"]
+[node name="ParticipantsVBox" type="VBoxContainer" parent="ChatVBox/UpperHBox/InfoVBox/ParticipantsScroll"]
 layout_mode = 2
 
-[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="ChatVBoxContainer/UpperHBoxContainer/ParticipantsScrollContainer2"]
-spawn_path = NodePath("../ParticipantsVBoxContainer")
+[node name="ParticipantSpawner" type="MultiplayerSpawner" parent="ChatVBox/UpperHBox/InfoVBox/ParticipantsScroll"]
+spawn_path = NodePath("../ParticipantsVBox")
 
-[node name="LowerHBoxContainer" type="HBoxContainer" parent="ChatVBoxContainer"]
+[node name="LowerHBox" type="HBoxContainer" parent="ChatVBox"]
 layout_mode = 2
 
-[node name="LineEdit" type="LineEdit" parent="ChatVBoxContainer/LowerHBoxContainer"]
+[node name="MessageLineEdit" type="LineEdit" parent="ChatVBox/LowerHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="SendButton" type="Button" parent="ChatVBoxContainer/LowerHBoxContainer"]
+[node name="SendButton" type="Button" parent="ChatVBox/LowerHBox"]
 layout_mode = 2
 text = "Send"
 
 [connection signal="close_requested" from="." to="." method="_on_close_requested"]
 [connection signal="go_back_requested" from="." to="." method="_on_go_back_requested"]
-[connection signal="child_entered_tree" from="ChatVBoxContainer/UpperHBoxContainer/MessageScrollContainer/MessageVBoxContainer" to="." method="_on_message_v_box_container_child_entered_tree"]
-[connection signal="text_submitted" from="ChatVBoxContainer/LowerHBoxContainer/LineEdit" to="." method="_on_line_edit_text_submitted"]
-[connection signal="pressed" from="ChatVBoxContainer/LowerHBoxContainer/SendButton" to="." method="_on_send_button_pressed"]
+[connection signal="child_entered_tree" from="ChatVBox/UpperHBox/MessageScroll/MessageVBox" to="." method="_on_message_v_box_container_child_entered_tree"]
+[connection signal="focus_exited" from="ChatVBox/UpperHBox/InfoVBox/PlayerHBox/NameLineEdit" to="." method="_on_name_line_edit_focus_exited"]
+[connection signal="text_submitted" from="ChatVBox/UpperHBox/InfoVBox/PlayerHBox/NameLineEdit" to="." method="_on_name_line_edit_text_submitted"]
+[connection signal="color_changed" from="ChatVBox/UpperHBox/InfoVBox/PlayerHBox/PlayerColorPicker" to="." method="_on_player_color_picker_color_changed"]
+[connection signal="text_submitted" from="ChatVBox/LowerHBox/MessageLineEdit" to="." method="_on_line_edit_text_submitted"]
+[connection signal="pressed" from="ChatVBox/LowerHBox/SendButton" to="." method="_on_send_button_pressed"]

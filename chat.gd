@@ -2,13 +2,11 @@ extends Window
 
 const NAME_ADJECTIVES:Array = ["Red", "Orange", "Yellow", "Green", "Blue", "Indigo", "Violet"]
 const NAME_NOUNS:Array = ["Dog", "Cat", "Mouse", "Bird", "Pig", "Fish", "Bear", "Fox", "Bunny"]
-# TODO: Let the player choose their name
-# TODO: Let the player choose a color
-var _chat_nickname:String = "%s %s" % [NAME_ADJECTIVES.pick_random(), NAME_NOUNS.pick_random()]
-var _chat_color:Color = Color.from_hsv(randf(), randf() * 0.5 + 0.5, randf() * 0.5 + 0.5)
 
 var participants:Dictionary = {}
 var participant_labels:Dictionary = {}
+
+# UI shortcuts
 
 func participant_spawner() -> MultiplayerSpawner:
 	return $ChatVBox/UpperHBox/InfoVBox/ParticipantsScroll/ParticipantSpawner
@@ -16,14 +14,26 @@ func participant_spawner() -> MultiplayerSpawner:
 func message_spawner() -> MultiplayerSpawner:
 	return $ChatVBox/UpperHBox/MessageScroll/MessageSpawner
 
+func player_name_line_edit() -> LineEdit:
+	return $ChatVBox/UpperHBox/InfoVBox/PlayerHBox/NameLineEdit
+
+func player_color_picker() -> ColorPickerButton:
+	return $ChatVBox/UpperHBox/InfoVBox/PlayerHBox/PlayerColorPicker
+
+# Event-driven functions
+
 func _ready():
 	participant_spawner().spawn_function = _spawn_partipant_label
 	message_spawner().spawn_function = _spawn_message
+	player_name_line_edit().text = "%s %s" % [NAME_ADJECTIVES.pick_random(), NAME_NOUNS.pick_random()]
+	player_color_picker().color = Color.from_hsv(randf(), randf() * 0.5 + 0.5, randf() * 0.5 + 0.5)
+
+# Participant information functions
 
 func get_chat_config() -> Dictionary:
 	return {
-		"name": _chat_nickname,
-		"color": _chat_color
+		"name": player_name_line_edit().text,
+		"color": player_color_picker().color
 	}
 
 func register_participant(player_info:Dictionary) -> void:
@@ -32,10 +42,13 @@ func register_participant(player_info:Dictionary) -> void:
 	if multiplayer.is_server():
 		participant_spawner().spawn(player_info)
 
-func _spawn_partipant_label(data:Dictionary) -> Label:
+func _spawn_partipant_label(data:Dictionary) -> RichTextLabel:
 	print("[%s] _spawn_partipant_label called with %s" % [multiplayer.get_unique_id(), data])
-	var label:Label = Label.new()
-	label.text = data["name"]
+	var label:RichTextLabel = RichTextLabel.new()
+	label.fit_content = true
+	label.push_color(data["color"])
+	label.add_text(data["name"])
+	label.pop_all()
 	participant_labels[data["peer_id"]] = label
 	return label
 
@@ -46,16 +59,59 @@ func deregister_participant(peer_id:int) -> void:
 
 func _delete_participant_label(peer_id:int) -> void:
 	print("[%s] _delete_participant_label called with %s" % [multiplayer.get_unique_id(), peer_id])
-	var label:Label = participant_labels[peer_id]
+	var label:RichTextLabel = participant_labels[peer_id]
 	participant_spawner().get_node(participant_spawner().spawn_path).remove_child(label)
 	label.queue_free()
 
-func _on_line_edit_text_submitted(_new_text):
+# UI event-driven functions
+
+func _on_message_line_edit_text_submitted(new_text):
+	print("[%s] _on_message_line_edit_text_submitted called with %s" % [multiplayer.get_unique_id(), new_text])
 	_send_message()
 	
 func _on_send_button_pressed():
+	print("[%s] _on_send_button_pressed called" % multiplayer.get_unique_id())
 	_send_message()
 	$ChatVBox/LowerHBox/MessageLineEdit.grab_focus()
+
+func _on_close_requested():
+	hide()
+	get_tree().paused = false
+
+func _on_go_back_requested():
+	hide()
+	get_tree().paused = false
+
+# When a new message appears, if we are watching the end of the chat, scrolls
+# until the new message is fully in view.
+func _on_message_v_box_child_entered_tree(node):
+	print("[%s] _on_message_v_box_child_entered_tree called with %s" % [multiplayer.get_unique_id(), node])
+	var msc:ScrollContainer = $ChatVBox/UpperHBox/MessageScroll
+	var scrollbar:VScrollBar = msc.get_v_scroll_bar()
+	if scrollbar.value >= scrollbar.max_value - scrollbar.page:
+		await get_tree().process_frame
+		msc.ensure_control_visible(node)
+
+func _on_player_color_picker_color_changed(color):
+	print("[%s] _on_player_color_picker_color_changed called wth %s" % [multiplayer.get_unique_id(), color])
+	_change_peer_color(multiplayer.get_unique_id(), color)
+	if multiplayer.multiplayer_peer is ENetMultiplayerPeer:
+		_rpc_change_peer_color.rpc(color)
+
+func _on_name_line_edit_text_submitted(new_text):
+	print("[%s] _on_name_line_edit_text_submitted called wth %s" % [multiplayer.get_unique_id(), new_text])
+	_change_peer_name(multiplayer.get_unique_id(), new_text)
+	if multiplayer.multiplayer_peer is ENetMultiplayerPeer:
+		_rpc_change_peer_name.rpc(new_text)
+
+func _on_name_line_edit_focus_exited():
+	print("[%s] _on_name_line_edit_focus_exited called" % multiplayer.get_unique_id())
+	var new_text:String = player_name_line_edit().text
+	_change_peer_name(multiplayer.get_unique_id(), new_text)
+	if multiplayer.multiplayer_peer is ENetMultiplayerPeer:
+		_rpc_change_peer_name.rpc(new_text)
+
+# Other functions
 
 func _send_message() -> void:
 	print("[%s] _send_message called" % multiplayer.get_unique_id())
@@ -65,24 +121,21 @@ func _send_message() -> void:
 	if le.text.strip_edges() == "":
 		return
 	if multiplayer.is_server():
-		create_message(le.text)
+		create_message(multiplayer.get_unique_id(), le.text)
 	else:
 		_rpc_create_message.rpc_id(1, le.text)
 	le.text = ""
 
 @rpc("any_peer", "reliable")
 func _rpc_create_message(message:String) -> void:
-	print("[%s] _rpc_create_message called with %s" % [multiplayer.get_unique_id(), message])
-	create_message(message)
+	print("[%s] (RPC) _rpc_create_message called with %s" % [multiplayer.get_unique_id(), message])
+	create_message(multiplayer.get_remote_sender_id(), message)
 
-func create_message(message:String) -> void:
+func create_message(peer_id:int, message:String) -> void:
 	print("[%s] create_message called with %s" % [multiplayer.get_unique_id(), message])
 	if !multiplayer.is_server():
 		return
-	var sender_id:int = multiplayer.get_remote_sender_id()
-	if sender_id == 0:
-		sender_id = 1
-	var info:Dictionary = participants[sender_id]
+	var info:Dictionary = participants[peer_id]
 	message_spawner().spawn({
 		"name":    info["name"],
 		"color":   info["color"],
@@ -100,19 +153,30 @@ func _spawn_message(data:Dictionary) -> RichTextLabel:
 	p.pop_all()
 	return p
 
-func _on_close_requested():
-	hide()
-	get_tree().paused = false
+@rpc("any_peer", "reliable")
+func _rpc_change_peer_color(color:Color):
+	print("[%s] (RPC) _rpc_change_peer_color called wth %s" % [multiplayer.get_unique_id(), color])
+	_change_peer_color(multiplayer.get_remote_sender_id(), color)
 
-func _on_go_back_requested():
-	hide()
-	get_tree().paused = false
+func _change_peer_color(peer_id:int, color:Color):
+	print("[%s] _change_peer_color called with %s, %s" % [multiplayer.get_unique_id(), peer_id, color])
+	participants[peer_id]["color"] = color
+	update_participant_label(peer_id)
 
-# When a new message appears, if we are watching the end of the chat, scrolls
-# until the new message is fully in view.
-func _on_message_v_box_container_child_entered_tree(node):
-	var msc:ScrollContainer = $ChatVBoxContainer/UpperHBoxContainer/MessageScrollContainer
-	var scrollbar:VScrollBar = msc.get_v_scroll_bar()
-	if scrollbar.value >= scrollbar.max_value - scrollbar.page:
-		await get_tree().process_frame
-		msc.ensure_control_visible(node)
+@rpc("any_peer", "reliable")
+func _rpc_change_peer_name(nickname:String):
+	print("[%s] (RPC) _rpc_change_peer_name called with %s" % [multiplayer.get_unique_id(), nickname])
+	_change_peer_name(multiplayer.get_remote_sender_id(), nickname)
+
+func _change_peer_name(peer_id:int, nickname:String):
+	print("[%s] _change_peer_name called with %s, %s" % [multiplayer.get_unique_id(), peer_id, nickname])
+	participants[peer_id]["name"] = nickname
+	update_participant_label(peer_id)
+
+func update_participant_label(peer_id:int):
+	var peer_info:Dictionary = participants[peer_id]
+	var label:RichTextLabel = participant_labels[peer_id]
+	label.clear()
+	label.push_color(peer_info["color"])
+	label.add_text(peer_info["name"])
+	label.pop_all()

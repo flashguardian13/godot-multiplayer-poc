@@ -58,10 +58,12 @@ edit_alpha = false
 [node name="ParticipantsScroll" type="ScrollContainer" parent="ChatVBox/UpperHBox/InfoVBox"]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
+size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
 [node name="ParticipantsVBox" type="VBoxContainer" parent="ChatVBox/UpperHBox/InfoVBox/ParticipantsScroll"]
 layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="ParticipantSpawner" type="MultiplayerSpawner" parent="ChatVBox/UpperHBox/InfoVBox/ParticipantsScroll"]
 spawn_path = NodePath("../ParticipantsVBox")
@@ -79,9 +81,9 @@ text = "Send"
 
 [connection signal="close_requested" from="." to="." method="_on_close_requested"]
 [connection signal="go_back_requested" from="." to="." method="_on_go_back_requested"]
-[connection signal="child_entered_tree" from="ChatVBox/UpperHBox/MessageScroll/MessageVBox" to="." method="_on_message_v_box_container_child_entered_tree"]
+[connection signal="child_entered_tree" from="ChatVBox/UpperHBox/MessageScroll/MessageVBox" to="." method="_on_message_v_box_child_entered_tree"]
 [connection signal="focus_exited" from="ChatVBox/UpperHBox/InfoVBox/PlayerHBox/NameLineEdit" to="." method="_on_name_line_edit_focus_exited"]
 [connection signal="text_submitted" from="ChatVBox/UpperHBox/InfoVBox/PlayerHBox/NameLineEdit" to="." method="_on_name_line_edit_text_submitted"]
 [connection signal="color_changed" from="ChatVBox/UpperHBox/InfoVBox/PlayerHBox/PlayerColorPicker" to="." method="_on_player_color_picker_color_changed"]
-[connection signal="text_submitted" from="ChatVBox/LowerHBox/MessageLineEdit" to="." method="_on_line_edit_text_submitted"]
+[connection signal="text_submitted" from="ChatVBox/LowerHBox/MessageLineEdit" to="." method="_on_message_line_edit_text_submitted"]
 [connection signal="pressed" from="ChatVBox/LowerHBox/SendButton" to="." method="_on_send_button_pressed"]

@@ -48,6 +48,9 @@ func _on_join_button_pressed():
 		return error
 	multiplayer.multiplayer_peer = peer
 	print("[%s] peer is now %s" % [my_peer_id(), multiplayer.multiplayer_peer])
+	var data:Dictionary = { "peer_id": multiplayer.get_unique_id() }
+	data.merge($ChatVBoxContainer.get_chat_config(), true)
+	setup_player(data)
 
 func _on_leave_button_pressed():
 	print("[%s] (Click) Leave" % my_peer_id())

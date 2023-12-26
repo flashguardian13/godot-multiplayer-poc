@@ -41,6 +41,7 @@ func register_participant(player_info:Dictionary) -> void:
 	participants[player_info["peer_id"]] = player_info
 	if multiplayer.is_server():
 		participant_spawner().spawn(player_info)
+		create_system_message("%s has connected." % player_info["name"])
 
 func _spawn_partipant_label(data:Dictionary) -> RichTextLabel:
 	print("[%s] _spawn_partipant_label called with %s" % [multiplayer.get_unique_id(), data])
@@ -55,6 +56,9 @@ func _spawn_partipant_label(data:Dictionary) -> RichTextLabel:
 func deregister_participant(peer_id:int) -> void:
 	print("[%s] deregister_participant called with %s" % [multiplayer.get_unique_id(), peer_id])
 	_delete_participant_label(peer_id)
+	if multiplayer.is_server():
+		var info:Dictionary = participants[peer_id]
+		create_system_message("%s has disconnected." % info["name"])
 	participants.erase(peer_id)
 
 func _delete_participant_label(peer_id:int) -> void:
@@ -93,20 +97,26 @@ func _on_message_v_box_child_entered_tree(node):
 		msc.ensure_control_visible(node)
 
 func _on_player_color_picker_color_changed(color):
+	if participants[multiplayer.get_unique_id()]["color"] == color:
+		return
 	print("[%s] _on_player_color_picker_color_changed called wth %s" % [multiplayer.get_unique_id(), color])
 	_change_peer_color(multiplayer.get_unique_id(), color)
 	if multiplayer.multiplayer_peer is ENetMultiplayerPeer:
 		_rpc_change_peer_color.rpc(color)
 
 func _on_name_line_edit_text_submitted(new_text):
+	if participants[multiplayer.get_unique_id()]["name"] == new_text:
+		return
 	print("[%s] _on_name_line_edit_text_submitted called wth %s" % [multiplayer.get_unique_id(), new_text])
 	_change_peer_name(multiplayer.get_unique_id(), new_text)
 	if multiplayer.multiplayer_peer is ENetMultiplayerPeer:
 		_rpc_change_peer_name.rpc(new_text)
 
 func _on_name_line_edit_focus_exited():
-	print("[%s] _on_name_line_edit_focus_exited called" % multiplayer.get_unique_id())
 	var new_text:String = player_name_line_edit().text
+	if participants[multiplayer.get_unique_id()]["name"] == new_text:
+		return
+	print("[%s] _on_name_line_edit_focus_exited called" % multiplayer.get_unique_id())
 	_change_peer_name(multiplayer.get_unique_id(), new_text)
 	if multiplayer.multiplayer_peer is ENetMultiplayerPeer:
 		_rpc_change_peer_name.rpc(new_text)
@@ -132,7 +142,7 @@ func _rpc_create_message(message:String) -> void:
 	create_message(multiplayer.get_remote_sender_id(), message)
 
 func create_message(peer_id:int, message:String) -> void:
-	print("[%s] create_message called with %s" % [multiplayer.get_unique_id(), message])
+	print("[%s] create_message called with %s, %s" % [multiplayer.get_unique_id(), peer_id, message])
 	if !multiplayer.is_server():
 		return
 	var info:Dictionary = participants[peer_id]
@@ -143,12 +153,24 @@ func create_message(peer_id:int, message:String) -> void:
 		"message": message
 	})
 
+func create_system_message(message:String) -> void:
+	print("[%s] create_system_message called with %s" % [multiplayer.get_unique_id(), message])
+	if !multiplayer.is_server():
+		return
+	message_spawner().spawn({
+		"name":    "",
+		"color":   Color.WHITE,
+		"id":      0,
+		"message": message
+	})
+
 func _spawn_message(data:Dictionary) -> RichTextLabel:
 	print("[%s] _spawn_message called with %s" % [multiplayer.get_unique_id(), data])
 	var p:RichTextLabel = RichTextLabel.new()
 	p.fit_content = true
 	p.push_color(data["color"])
-	p.add_text("[%s#%s]: " % [data["name"], data["id"]])
+	if data["name"] != "" || data["id"] != 0:
+		p.add_text("[%s#%s]: " % [data["name"], data["id"]])
 	p.append_text(data["message"])
 	p.pop_all()
 	return p
@@ -170,7 +192,10 @@ func _rpc_change_peer_name(nickname:String):
 
 func _change_peer_name(peer_id:int, nickname:String):
 	print("[%s] _change_peer_name called with %s, %s" % [multiplayer.get_unique_id(), peer_id, nickname])
-	participants[peer_id]["name"] = nickname
+	var info:Dictionary = participants[peer_id]
+	if multiplayer.is_server():
+		create_system_message("%s has changed their name to %s." % [info["name"], nickname])
+	info["name"] = nickname
 	update_participant_label(peer_id)
 
 func update_participant_label(peer_id:int):

@@ -79,6 +79,22 @@ size_flags_horizontal = 3
 layout_mode = 2
 text = "Send"
 
+[node name="InfoHBox" type="HBoxContainer" parent="ChatVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ConnectedToLabel" type="Label" parent="ChatVBox/InfoHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="LanIpLabel" type="Label" parent="ChatVBox/InfoHBox"]
+layout_mode = 2
+
+[node name="PublicIpLabel" type="Label" parent="ChatVBox/InfoHBox"]
+layout_mode = 2
+
+[node name="HTTPRequest" type="HTTPRequest" parent="ChatVBox/InfoHBox/PublicIpLabel"]
+
 [connection signal="close_requested" from="." to="." method="_on_close_requested"]
 [connection signal="go_back_requested" from="." to="." method="_on_go_back_requested"]
 [connection signal="child_entered_tree" from="ChatVBox/UpperHBox/MessageScroll/MessageVBox" to="." method="_on_message_v_box_child_entered_tree"]

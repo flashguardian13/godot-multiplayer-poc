@@ -27,6 +27,69 @@ func _ready():
 	message_spawner().spawn_function = _spawn_message
 	player_name_line_edit().text = "%s %s" % [NAME_ADJECTIVES.pick_random(), NAME_NOUNS.pick_random()]
 	player_color_picker().color = Color.from_hsv(randf(), randf() * 0.5 + 0.5, randf() * 0.5 + 0.5)
+	# TODO: populate the info hbox
+	$ChatVBox/InfoHBox/ConnectedToLabel.text = "n/a"
+	update_lan_ip_label()
+	update_public_ip_label()
+
+func update_lan_ip_label() -> void:
+	var pc_name:String = ""
+	if OS.has_feature("windows"):
+		if OS.has_environment("COMPUTERNAME"):
+			pc_name = str(OS.get_environment("COMPUTERNAME"))
+		else:
+			print("Failed to get LAN IP for Windows: no such env var 'COMPUTERNAME'")
+	elif OS.has_feature("x11"):
+		if OS.has_environment("HOSTNAME"):
+			pc_name = str(OS.get_environment("HOSTNAME"))
+		else:
+			print("Failed to get LAN IP for x11: no such env var 'HOSTNAME'")
+	elif OS.has_feature("OSX"):
+		if OS.has_environment("HOSTNAME"):
+			pc_name = str(OS.get_environment("HOSTNAME"))
+		else:
+			print("Failed to get LAN IP for OSX: no such env var 'HOSTNAME'")
+	else:
+		print("Failed to get LAN IP: unrecognized OS")
+	var lan_ip:String = "n/a" if pc_name == "" else IP.resolve_hostname(pc_name, 1)
+	$ChatVBox/InfoHBox/LanIpLabel.text = "LAN: %s" % lan_ip
+
+func update_public_ip_label() -> void:
+	var request:HTTPRequest = $ChatVBox/InfoHBox/PublicIpLabel/HTTPRequest
+	var error:Error = request.request("https://api.ipify.org/?format=json")
+	if error != OK:
+		print("Error %s while requesting Public IP" % error)
+		$ChatVBox/InfoHBox/PublicIpLabel.text = "Public: n/a"
+		return
+	
+	var responses = await request.request_completed
+	var result:int = responses[0]
+	var response_code:int = responses[1]
+	var body:String = responses[3].get_string_from_utf8()
+	if result != HTTPRequest.Result.RESULT_SUCCESS || response_code < 200 || response_code >= 300:
+		print("Failed to get Public IP: bad response")
+		print("- result: %s" % result)
+		print("- response code: %s" % response_code)
+		print("- headers: %s" % responses[2])
+		print("- body: %s" % body)
+		$ChatVBox/InfoHBox/PublicIpLabel.text = "Public: n/a"
+		return
+	
+	var json:JSON = JSON.new()
+	error = json.parse(body)
+	if error != OK:
+		print("Error %s while parsing response body as JSON for Public IP" % error)
+		print("- body: %s" % body)
+		$ChatVBox/InfoHBox/PublicIpLabel.text = "Public: n/a"
+		return
+	
+	var response = json.get_data()
+	if !response.has_key("ip"):
+		print("Key 'ip' absent from public IP response body: " % response)
+		$ChatVBox/InfoHBox/PublicIpLabel.text = "Public: n/a"
+		return
+	
+	$ChatVBox/InfoHBox/PublicIpLabel.text = "Public: %s" % response["ip"]
 
 # Participant information functions
 

@@ -84,7 +84,7 @@ func update_public_ip_label() -> void:
 		return
 	
 	var response = json.get_data()
-	if !response.has_key("ip"):
+	if !response.has("ip"):
 		print("Key 'ip' absent from public IP response body: " % response)
 		$ChatVBox/InfoHBox/PublicIpLabel.text = "Public: n/a"
 		return

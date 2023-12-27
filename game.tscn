@@ -30,19 +30,19 @@ focus_mode = 0
 text = "Host"
 
 [node name="JoinButton" type="Button" parent="Buttons"]
-offset_left = 451.0
-offset_top = 12.0
-offset_right = 569.0
-offset_bottom = 47.0
+offset_left = 766.0
+offset_top = 11.0
+offset_right = 884.0
+offset_bottom = 46.0
 focus_mode = 0
 text = "Join
 "
 
 [node name="LeaveButton" type="Button" parent="Buttons"]
-offset_left = 619.0
-offset_top = 12.0
-offset_right = 737.0
-offset_bottom = 47.0
+offset_left = 1023.0
+offset_top = 10.0
+offset_right = 1141.0
+offset_bottom = 45.0
 focus_mode = 0
 text = "Leave"
 
@@ -53,6 +53,15 @@ offset_right = 127.0
 offset_bottom = 46.0
 focus_mode = 0
 text = "Chat"
+
+[node name="IpAddressLineEdit" type="LineEdit" parent="Buttons"]
+offset_left = 612.0
+offset_top = 13.0
+offset_right = 752.0
+offset_bottom = 44.0
+placeholder_text = "Enter IP address"
+alignment = 1
+max_length = 15
 
 [node name="ChatVBoxContainer" parent="." instance=ExtResource("3_rrah2")]
 process_mode = 2

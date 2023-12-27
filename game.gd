@@ -32,6 +32,7 @@ func _on_host_button_pressed():
 		return error
 	multiplayer.multiplayer_peer = peer
 	print("[%s] peer is now %s" % [my_peer_id(), multiplayer.multiplayer_peer])
+	$ChatVBoxContainer.set_connection_status_label("Hosting")
 	var data:Dictionary = { "peer_id": multiplayer.get_unique_id() }
 	data.merge($ChatVBoxContainer.get_chat_config(), true)
 	setup_player(data)
@@ -41,18 +42,20 @@ func _on_join_button_pressed():
 	if is_multiplayer():
 		print("[%s] (Click) Connection already exists." % my_peer_id())
 		return
-	
+
 	var ip_address:String = $Buttons/IpAddressLineEdit.text
 	if !ip_address.is_valid_ip_address():
 		print("[%s] (Click) Invalid IP address: " % [my_peer_id(), ip_address])
 		return
-	
+
+	$ChatVBoxContainer.set_connection_status_label("Connecting to %s ..." % ip_address)
+
 	var peer:ENetMultiplayerPeer = ENetMultiplayerPeer.new()
 	var error = peer.create_client(ip_address, PORT)
 	if error:
 		print("[%s] (Click) %s" % [my_peer_id(), error])
 		return error
-	
+
 	multiplayer.multiplayer_peer = peer
 	print("[%s] peer is now %s" % [my_peer_id(), multiplayer.multiplayer_peer])
 	var data:Dictionary = { "peer_id": multiplayer.get_unique_id() }
@@ -86,6 +89,8 @@ func _on_peer_disconnected(id:int):
 
 func _on_connected_to_server():
 	print("[%s] (Event) Connection to server succeeded." % my_peer_id())
+	var host_ip:String = multiplayer.multiplayer_peer.get_peer(1).get_remote_address()
+	$ChatVBoxContainer.set_connection_status_label("Connected to %s" % host_ip)
 
 func _on_connection_failed():
 	print("[%s] (Event) Connection to server failed!" % my_peer_id())
@@ -140,6 +145,7 @@ func disconnect_from_server() -> void:
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	print("[%s] peer is now %s" % [my_peer_id(), multiplayer.multiplayer_peer])
 	old_peer.close()
+	$ChatVBoxContainer.set_connection_status_label("Disconnected")
 	print("[%s] Multiplayer peer closed." % my_peer_id())
 	for player_id in player_sprites.keys():
 		teardown_player(player_id)

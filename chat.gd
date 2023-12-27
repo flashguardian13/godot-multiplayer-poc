@@ -27,10 +27,11 @@ func _ready():
 	message_spawner().spawn_function = _spawn_message
 	player_name_line_edit().text = "%s %s" % [NAME_ADJECTIVES.pick_random(), NAME_NOUNS.pick_random()]
 	player_color_picker().color = Color.from_hsv(randf(), randf() * 0.5 + 0.5, randf() * 0.5 + 0.5)
-	# TODO: populate the info hbox
-	$ChatVBox/InfoHBox/ConnectedToLabel.text = "n/a"
 	update_lan_ip_label()
 	update_public_ip_label()
+
+func set_connection_status_label(str:String) -> void:
+	$ChatVBox/InfoHBox/ConnectedToLabel.text = str
 
 func update_lan_ip_label() -> void:
 	var pc_name:String = ""
@@ -119,7 +120,7 @@ func _spawn_partipant_label(data:Dictionary) -> RichTextLabel:
 func deregister_participant(peer_id:int) -> void:
 	print("[%s] deregister_participant called with %s" % [multiplayer.get_unique_id(), peer_id])
 	_delete_participant_label(peer_id)
-	if multiplayer.is_server():
+	if multiplayer.is_server() && participants.has(peer_id):
 		var info:Dictionary = participants[peer_id]
 		create_system_message("%s has disconnected." % info["name"])
 	participants.erase(peer_id)

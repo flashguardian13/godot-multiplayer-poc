@@ -86,6 +86,7 @@ theme_override_constants/separation = 10
 [node name="ConnectedToLabel" type="Label" parent="ChatVBox/InfoHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
+text = "Disconnected"
 
 [node name="LanIpLabel" type="Label" parent="ChatVBox/InfoHBox"]
 layout_mode = 2
